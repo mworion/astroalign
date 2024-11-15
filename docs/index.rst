@@ -1,6 +1,6 @@
 .. _index:
 
-.. image:: aa_bw.jpg
+.. image:: images/logo-seal-dark-light.png
     :width: 200px
     :align: left
 
@@ -28,10 +28,6 @@ You can find a Jupyter notebook example with the main features at http://quatrop
 .. note::
     If your images contain a large number of hot pixels, this may result in an incorrect registration.
     Please refer to the tutorial for how to solve this problem using `CCDProc's cosmic-ray remover <https://ccdproc.readthedocs.io/en/latest/api/ccdproc.cosmicray_lacosmic.html>`_.
-
-.. note::
-    This library is compatible with `bottleneck <https://github.com/pydata/bottleneck>`_ and may offer performance improvements in some cases.
-    `Astroalign` will pick this optional dependency up and use its performance improved ``mean`` and ``median`` functions.
 
 
 Citation
@@ -87,6 +83,7 @@ Guide:
 
    installation
    tutorial
+   mask
    examples
    api
 

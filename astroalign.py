@@ -42,7 +42,7 @@ functions, seeing and atmospheric conditions.
 """
 
 
-__version__ = "2.4.1"
+__version__ = "2.6.1"
 
 __all__ = [
     "MIN_MATCHES_FRACTION",
@@ -56,16 +56,30 @@ __all__ = [
     "register",
 ]
 
-try:
-    import bottleneck as bn
-except ImportError:
-    HAS_BOTTLENECK = False
-else:
-    HAS_BOTTLENECK = True
-
 import numpy as _np
-from skimage.transform import estimate_transform
-from skimage.transform import matrix_transform
+
+
+def estimate_transform(*args, **kwargs):
+    """Lazy-loader function for skimage.transform.estimate_transform.
+
+    Full documentation:
+    https://scikit-image.org/docs/stable/api/skimage.transform.html#skimage.transform.estimate_transform
+    """
+    from skimage.transform import estimate_transform
+
+    return estimate_transform(*args, **kwargs)
+
+
+def matrix_transform(*args, **kwargs):
+    """Lazy-loader function for skimage.transform.matrix_transform.
+
+    Full documentation:
+    https://scikit-image.org/docs/stable/api/skimage.transform.html#skimage.transform.matrix_transform
+    """
+    from skimage.transform import matrix_transform
+
+    return matrix_transform(*args, **kwargs)
+
 
 PIXEL_TOL = 2
 """The pixel distance tolerance to assume two invariant points are the same.
@@ -86,26 +100,6 @@ The number of nearest neighbors of a given star (including itself) to construct
 the triangle invariants.
 
 Default: 5
-"""
-
-_default_median = bn.nanmedian if HAS_BOTTLENECK else _np.nanmedian  # pragma: no cover
-"""
-Default median function when/if optional bottleneck is available
-"""
-
-_default_average = bn.nanmean if HAS_BOTTLENECK else _np.nanmean  # pragma: no cover
-"""
-Default mean function when/if optional bottleneck is available
-"""
-
-_default_sum = bn.nansum if HAS_BOTTLENECK else _np.nansum  # pragma: no cover
-"""
-Default sum function when/if optional bottleneck is available
-"""
-
-_default_std = bn.nanstd if HAS_BOTTLENECK else _np.nanstd  # pragma: no cover
-"""
-Default std deviation function when/if optional bottleneck is available
 """
 
 
@@ -228,17 +222,28 @@ class _MatchTransform:
 
 
 def _data(image):
+    """Return the bare 2D numpy array with pixel information."""
     if hasattr(image, "data") and isinstance(image.data, _np.ndarray):
         return image.data
-    else:
-        return _np.asarray(image)
+    return _np.asarray(image)
+
+
+def _mask(image):
+    """Return a 2D numpy mask array if any, or None if there is no mask."""
+    if hasattr(image, "mask"):
+        the_np_mask = _np.asarray(image.mask)
+        if the_np_mask.ndim == 2:
+            return the_np_mask
+        else:
+            return _np.logical_or.reduce(the_np_mask, axis=-1)
+    return None
 
 
 def _bw(image):
     """Return a 2D numpy array for an array of arbitrary channels."""
     if image.ndim == 2:
         return image
-    return _default_average(image, axis=-1)
+    return _np.mean(image, axis=-1)
 
 
 def _shape(image):
@@ -303,6 +308,7 @@ def find_transform(
                 _bw(_data(source)),
                 detection_sigma=detection_sigma,
                 min_area=min_area,
+                mask=_mask(source),
             )[:max_control_points]
     except Exception:
         raise TypeError("Input type for source not supported.")
@@ -317,6 +323,7 @@ def find_transform(
                 _bw(_data(target)),
                 detection_sigma=detection_sigma,
                 min_area=min_area,
+                mask=_mask(target),
             )[:max_control_points]
     except Exception:
         raise TypeError("Input type for target not supported.")
@@ -437,7 +444,7 @@ def apply_transform(
         output_shape=target_shape,
         order=3,
         mode="constant",
-        cval=_default_median(source_data),
+        cval=_np.median(source_data),
         clip=True,
         preserve_range=True,
     )
@@ -450,8 +457,8 @@ def apply_transform(
     )
     footprint = footprint > 0.4
 
-    if hasattr(source, "mask") and propagate_mask:
-        source_mask = _np.array(source.mask)
+    source_mask = _mask(source)
+    if source_mask is not None and propagate_mask:
         if source_mask.shape == source_data.shape:
             source_mask_rot = warp(
                 source_mask.astype("float32"),
@@ -525,17 +532,16 @@ def register(
     return aligned_image, footprint
 
 
-def _find_sources(img, detection_sigma=5, min_area=5):
+def _find_sources(img, detection_sigma=5, min_area=5, mask=None):
     """Return sources (x, y) sorted by brightness."""
-    import sep
+    import sep_pjw as sep
 
-    if isinstance(img, _np.ma.MaskedArray):
-        image = img.filled(fill_value=_default_median(img)).astype("float32")
-    else:
-        image = img.astype("float32")
-    bkg = sep.Background(image)
+    image = img.astype("float32")
+    bkg = sep.Background(image, mask=mask)
     thresh = detection_sigma * bkg.globalrms
-    sources = sep.extract(image - bkg.back(), thresh, minarea=min_area)
+    sources = sep.extract(
+        image - bkg.back(), thresh, minarea=min_area, mask=mask
+    )
     sources.sort(order="flux")
     return _np.array([[asrc["x"], asrc["y"]] for asrc in sources[::-1]])
 
@@ -601,7 +607,7 @@ def _ransac(data, model, thresh, min_matches):
     good_fit = None
     n_data = data.shape[0]
     all_idxs = _np.arange(n_data)
-    _np.random.shuffle(all_idxs)
+    _np.random.default_rng().shuffle(all_idxs)
 
     for iter_i in range(n_data):
         # Partition indices into two random subsets

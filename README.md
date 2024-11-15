@@ -1,4 +1,4 @@
-<img src="docs/aa_bw.jpg" height="150" alt="Astroalign"/>
+![logo](docs/images/logo-inline-dark-light.png)
 
 ***
 
@@ -31,33 +31,22 @@ You can find a Jupyter notebook example with the main features at [http://quatro
 
 # Installation
 
-Using setuptools:
+Install from PyPI
 
 ```bash
 $ pip install astroalign
 ```
 
-or from this distribution with
-
-```bash
-$ python setup.py install
-```
-
-## Performance: Optional
-
-This library is optionally compatible with [bottleneck](https://github.com/pydata/bottleneck) and may offer performance improvements in some cases.
-Install bottleneck in your project as a peer to astroalign using:
-
-```bash
-pip install bottleneck
-```
-
-`Astroalign` will pick this optional dependency up and use it's performance improved functions for computing transforms.
-
 ## Running Tests
 
 ```bash
 python tests/test_align.py
+```
+
+or using pytest:
+
+```bash
+pytest -v
 ```
 
 # Usage example
@@ -82,6 +71,20 @@ The returned `transf` object is a scikit-image [`SimilarityTranform`](http://sci
 
 `s_list` and `t_list` are numpy arrays of (x, y) point correspondence between `source` and `target`. `transf` applied to `s_list` will approximately render `t_list`.
 
+# Related Software
+
+There are other related software that may offer similar functionality as astroalign.
+This list is not exhaustive and may be others.
+
+* [astrometry.net](https://github.com/dstndstn/astrometry.net)
+* [reproject](https://github.com/astropy/reproject)
+* [Watney Astrometry Engine](https://github.com/Jusas/WatneyAstrometry)
+* [Stellar Solver](https://github.com/rlancaste/stellarsolver)
+* [THRASTRO](https://github.com/THRASTRO/astrometrylib)
+* [Montage](https://github.com/Caltech-IPAC/Montage)
+* [Aafitrans](https://github.com/prajwel/aafitrans)
+* [astrometry](https://github.com/neuromorphicsystems/astrometry)
+
 # Citation
 
 If you use astroalign in a scientific publication, we would appreciate citations to the following [paper](https://www.sciencedirect.com/science/article/pii/S221313372030038X):
@@ -91,7 +94,5 @@ If you use astroalign in a scientific publication, we would appreciate citations
     Astronomy & Computing, Volume 32, July 2020, 100384.
 
 ***
-
-TOROS Dev Team
 
 <martinberoiz@gmail.com>
